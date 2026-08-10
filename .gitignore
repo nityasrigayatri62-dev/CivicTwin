@@ -1,0 +1,47 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+.venv/
+venv/
+env/
+ENV/
+bin/
+lib/
+include/
+
+# Portable tools
+git-portable/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# Python cache & build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Databases
+*.db
+*.sqlite3
+
+# IDEs & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
