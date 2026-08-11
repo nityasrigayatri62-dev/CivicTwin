@@ -107,16 +107,8 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
     };
   }, [onSelectRoad, onSelectIntersection, onSelectFacility, onSelectZone]);
 
-  // Helper to determine road color based on congestion
-  const getCongestionColor = (road: Road) => {
-    if (road.availability === 0) return '#64748b'; // Gray for closed
-    const ratio = road.current_volume / road.capacity;
-    if (ratio <= thresholds.clear) return '#10b981'; // Green
-    if (ratio <= thresholds.moderate) return '#f59e0b'; // Amber
-    return '#f43f5e'; // Red
-  };
-
   // Initialize Map
+
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -157,6 +149,15 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
+
+    // Helper to determine road color based on congestion
+    const getCongestionColor = (road: Road) => {
+      if (road.availability === 0) return '#64748b'; // Gray for closed
+      const ratio = road.current_volume / road.capacity;
+      if (ratio <= thresholds.clear) return '#10b981'; // Green
+      if (ratio <= thresholds.moderate) return '#f59e0b'; // Amber
+      return '#f43f5e'; // Red
+    };
 
     const currentPolylines = polylinesRef.current;
     const roadIds = new Set<string>();
@@ -279,6 +280,7 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
       facIds.add(facility.id);
 
       let marker = currentMarkers[facility.id];
+      const isSelected = selectedFacility?.id === facility.id;
 
       if (!marker) {
         const emoji = facility.type === 'HOSPITAL' ? '🏥' : facility.type === 'FIRE_STATION' ? '🔥' : '👮';
@@ -288,8 +290,9 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
           title: facility.name,
           label: {
             text: emoji,
-            fontSize: '14px'
-          }
+            fontSize: isSelected ? '20px' : '14px'
+          },
+          animation: isSelected ? google.maps.Animation.BOUNCE : null
         });
 
         marker.addListener('click', () => {
@@ -297,6 +300,14 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
         });
 
         currentMarkers[facility.id] = marker;
+      } else {
+        marker.setOptions({
+          label: {
+            text: marker.getLabel()?.text || '',
+            fontSize: isSelected ? '20px' : '14px'
+          },
+          animation: isSelected ? google.maps.Animation.BOUNCE : null
+        });
       }
     });
 
@@ -307,7 +318,7 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
         delete currentMarkers[facId];
       }
     });
-  }, [facilities]);
+  }, [facilities, selectedFacility]);
 
   // Update Population Zones (Large circles)
   useEffect(() => {
@@ -321,19 +332,20 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
       zoneIds.add(zone.id);
 
       let circle = currentZones[zone.id];
+      const isSelected = selectedZone?.id === zone.id;
+      const color = zone.type === 'COMMERCIAL' ? '#38bdf8' : '#10b981';
 
       if (!circle) {
-        const color = zone.type === 'COMMERCIAL' ? '#38bdf8' : '#10b981';
         circle = new google.maps.Circle({
           center: { lat: zone.latitude, lng: zone.longitude },
           radius: zone.radius_meters || 400,
           fillColor: color,
-          fillOpacity: 0.05,
+          fillOpacity: isSelected ? 0.25 : 0.05,
           strokeColor: color,
-          strokeOpacity: 0.15,
-          strokeWeight: 1,
+          strokeOpacity: isSelected ? 0.6 : 0.15,
+          strokeWeight: isSelected ? 3 : 1,
           map: map,
-          zIndex: 5
+          zIndex: isSelected ? 15 : 5
         });
 
         circle.addListener('click', () => {
@@ -341,6 +353,13 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
         });
 
         currentZones[zone.id] = circle;
+      } else {
+        circle.setOptions({
+          fillOpacity: isSelected ? 0.25 : 0.05,
+          strokeOpacity: isSelected ? 0.6 : 0.15,
+          strokeWeight: isSelected ? 3 : 1,
+          zIndex: isSelected ? 15 : 5
+        });
       }
     });
 
@@ -351,7 +370,7 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
         delete currentZones[zoneId];
       }
     });
-  }, [populationZones]);
+  }, [populationZones, selectedZone]);
 
   return (
     <div 

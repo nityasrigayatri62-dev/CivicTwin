@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Activity, 
   Map as MapIcon, 
   Cpu, 
   Play, 
-  CheckCircle2, 
   AlertTriangle, 
   RefreshCw, 
   TrendingUp, 
@@ -13,10 +12,7 @@ import {
   MapPin, 
   Eye, 
   Calendar,
-  Building,
-  Home,
-  Shield,
-  Truck
+  Shield
 } from 'lucide-react';
 import './App.css';
 import { RoadNetworkMap } from './RoadNetworkMap';
@@ -137,7 +133,7 @@ function App() {
   const [apiConfig, setApiConfig] = useState<any>({ db_connected: false, ai_mode: 'fallback' });
 
   // Fetch baseline city structure
-  const fetchCityData = async () => {
+  const fetchCityData = useCallback(async () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/city');
       const json = await res.json();
@@ -147,29 +143,23 @@ function App() {
     } catch (e) {
       console.error('Failed to fetch city data', e);
     }
-  };
+  }, []);
 
   // Fetch scenarios list
-  const fetchScenariosHistory = async () => {
+  const fetchScenariosHistory = useCallback(async () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/scenarios');
       const json = await res.json();
       if (json.success) {
         setScenariosHistory(json.data);
-        
-        // If there are scenarios, set the latest one as active scenario
-        if (json.data.length > 0 && !activeScenario) {
-          const latestScen = json.data[0];
-          // We can fetch details if needed, or we just leave it to user interactions
-        }
       }
     } catch (e) {
       console.error('Failed to fetch scenarios', e);
     }
-  };
+  }, []);
 
   // Fetch health/configs
-  const fetchHealth = async () => {
+  const fetchHealth = useCallback(async () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/health');
       const json = await res.json();
@@ -179,7 +169,7 @@ function App() {
     } catch (e) {
       console.error('Health check failed', e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -190,7 +180,7 @@ function App() {
       setLoading(false);
     };
     init();
-  }, []);
+  }, [fetchHealth, fetchCityData, fetchScenariosHistory]);
 
   // Sync selected item details when cityData refreshes
   useEffect(() => {
@@ -198,7 +188,7 @@ function App() {
       const updated = cityData.roads.find(r => r.id === selectedRoad.id);
       if (updated) setSelectedRoad(updated);
     }
-  }, [cityData]);
+  }, [cityData, selectedRoad]);
 
 
   // Create & run traffic simulation
@@ -236,6 +226,7 @@ function App() {
         setActiveTab('digital-twin'); // Jump to map to see results
       }
     } catch (e) {
+      console.error(e);
       alert('Failed to run simulation. Check if backend is active.');
     } finally {
       setSimulationLoading(false);
@@ -256,6 +247,7 @@ function App() {
         setActiveTab('optimizer');
       }
     } catch (e) {
+      console.error(e);
       alert('Failed to run optimizer.');
     } finally {
       setOptimizationLoading(false);
@@ -280,6 +272,7 @@ function App() {
         setActiveTab('digital-twin');
       }
     } catch (e) {
+      console.error(e);
       alert('Failed to reset system.');
     }
   };
@@ -310,18 +303,11 @@ function App() {
         await handleReset();
       }
     } catch (e) {
+      console.error(e);
       alert('Failed to toggle road status.');
     } finally {
       setSimulationLoading(false);
     }
-  };
-
-  const getCongestionColor = (ratio: number, availability: number) => {
-    if (availability === 0) return '#64748b'; // Muted slate gray for closed
-    if (ratio <= 0.3) return '#10b981'; // Green
-    if (ratio <= 0.7) return '#f59e0b'; // Yellow
-    if (ratio <= 0.95) return '#f97316'; // Orange
-    return '#f43f5e'; // Red
   };
 
   const getCongestionLabel = (ratio: number, availability: number) => {
