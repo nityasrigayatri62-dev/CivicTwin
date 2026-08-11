@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import React, { useEffect, useRef } from 'react';
 
 interface Coordinate {
@@ -52,17 +53,17 @@ interface RoadNetworkMapProps {
   intersections: Intersection[];
   facilities: Facility[];
   populationZones: PopulationZone[];
-  
+
   selectedRoad: Road | null;
   selectedIntersection: Intersection | null;
   selectedFacility: Facility | null;
   selectedZone: PopulationZone | null;
-  
+
   onSelectRoad: (road: Road) => void;
   onSelectIntersection: (node: Intersection) => void;
   onSelectFacility: (facility: Facility) => void;
   onSelectZone: (zone: PopulationZone) => void;
-  
+
   thresholds: { clear: number; moderate: number };
 }
 
@@ -83,7 +84,7 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  
+
   // Keep track of rendered overlays to update or delete them in-place
   const polylinesRef = useRef<Record<string, google.maps.Polyline>>({});
   const intersectionCirclesRef = useRef<Record<string, google.maps.Circle>>({});
@@ -137,7 +138,7 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
       Object.values(intersectionCirclesRef.current).forEach(c => c.setMap(null));
       Object.values(facilityMarkersRef.current).forEach(m => m.setMap(null));
       Object.values(zoneCirclesRef.current).forEach(c => c.setMap(null));
-      
+
       polylinesRef.current = {};
       intersectionCirclesRef.current = {};
       facilityMarkersRef.current = {};
@@ -301,9 +302,13 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
 
         currentMarkers[facility.id] = marker;
       } else {
+        const currentLabel = marker.getLabel();
+
         marker.setOptions({
           label: {
-            text: marker.getLabel()?.text || '',
+            text: typeof currentLabel === 'string'
+              ? currentLabel
+              : currentLabel?.text || '',
             fontSize: isSelected ? '20px' : '14px'
           },
           animation: isSelected ? google.maps.Animation.BOUNCE : null
@@ -373,8 +378,8 @@ export const RoadNetworkMap: React.FC<RoadNetworkMapProps> = ({
   }, [populationZones, selectedZone]);
 
   return (
-    <div 
-      ref={mapRef} 
+    <div
+      ref={mapRef}
       className="google-map-container"
       style={{ width: '100%', height: '100%', borderRadius: 'inherit' }}
     />
